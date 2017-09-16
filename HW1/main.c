@@ -60,5 +60,6 @@ int main(int argc, char **argv) {
                 n, p, threads_count);
         fclose(f);
     }
+    free(seed);
     return 0;
 }
