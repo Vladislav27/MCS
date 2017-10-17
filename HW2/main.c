@@ -12,7 +12,7 @@ int compare(const void* x, const void* y) {
 void chipping(int* array, int n, int m) {
 #pragma omp parallel for
     for (int i = 0; i < n; i += m) {
-        qsort(array + i, i + m <= n ? m : n - i, sizeof(int), compare);
+        qsort(array + i, (size_t)(i + m <= n ? m : n - i), sizeof(int), compare);
     }
 }
 
@@ -90,27 +90,22 @@ void merge_sort(int* array, int n, int m, int* result_array) {
     chipping(array, n, m);
     memcpy(result_array, array, sizeof(int) * n);
 
-    int quantity = ceil((double)n / m);
-    if (m < n) {
-        for (int i = 0; i < ceil(log2(quantity)); i++) {
-            int level = (int)pow(2, i);
-            int left_1 = 0;
-            int right_1 = level * m - 1;
-            int left_2 = level * m;
-            int right_2 = 2 * level * m  <= n ? 2 * level * m - 1 : n - 1;
-            merge(array, left_1, right_1, left_2, right_2, result_array, left_1);
+    for(int i = 2 * m; i <= 2 * n; i *= 2) {
 #pragma omp parallel for shared(array, result_array)
-            for (int j = 0; j < quantity; j++) {
-                if (n - right_2 - 1 >= m * level + 1) {
-                    left_1 += 2 * level * m;
-                    right_1 += 2 * level * m;
-                    left_2 += 2 * level * m;
-                    right_2 = n - right_2 <= 2 * m * level ? n - 1 : left_2 + m * level - 1;
-                    merge(array, left_1, right_1, left_2, right_2, result_array, left_1);
-                }
+        for (int j = 0; j < n; j += i) {
+            int left_1 = j;
+            int right_1 = j + i / 2 - 1;
+            int left_2 = j + i / 2;
+            int right_2 = j + i - 1;
+            if (right_2 < n) {
+                merge(array, left_1, right_1, left_2, right_2, result_array, left_1);
+                continue;
             }
-            memcpy(array, result_array, sizeof(int) * n);
+            if (left_2 < n) {
+                merge(array, left_1, right_1, left_2, n - 1, result_array, left_1);
+            }
         }
+        memcpy(array, result_array, sizeof(int) * n);
     }
 }
 
@@ -127,12 +122,15 @@ int main(int argc, char **argv) {
     int p = atoi(argv[3]);
 
     int* array = (int*)malloc(sizeof(int) * n);
+    if (array == NULL) {
+        printf("Memory error");
+    }
 
     for (int i = 0; i < n; i++) {
         array[i] = rand() % 100;
     }
 
-    FILE * data = fopen("data.txt", "w");
+    FILE* data = fopen("data.txt", "w");
 
     for (int i = 0; i < n; i++) {
         fprintf(data, "%d ", array[i]);
@@ -142,9 +140,15 @@ int main(int argc, char **argv) {
     omp_set_num_threads(p);
 
     int* array_for_qsort = (int*)malloc(sizeof(int) * n);
+    if (array_for_qsort == NULL) {
+        printf("Memory error");
+    }
     memcpy(array_for_qsort, array, sizeof(int) * n);
 
     int* array_result = (int*)malloc(sizeof(int) * n);
+    if (array_result == NULL) {
+        printf("Memory error");
+    }
     double start_time_merge = omp_get_wtime();
     merge_sort(array, n, m, array_result);
     double end_time_merge = omp_get_wtime();
