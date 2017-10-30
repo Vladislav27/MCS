@@ -165,9 +165,9 @@ void merge(int* array, int left_1, int right_1, int left_2, int right_2, int* re
         if (p > 1) {
             single_flow_merge_arg[thread_id] = arg1;
             single_flow_merge_arg[thread_id + p / 2] = arg2;
-            pthread_create(threads + thread_id, NULL, single_flow_merge, single_flow_merge_arg + thread_id);
-            single_flow_merge(single_flow_merge_arg + thread_id + p / 2);
-            pthread_join(threads[thread_id], NULL);
+            pthread_create(threads + thread_id + p / 2, NULL, single_flow_merge, single_flow_merge_arg + thread_id + p / 2);
+            single_flow_merge(single_flow_merge_arg + thread_id);
+            pthread_join(threads[thread_id + p / 2], NULL);
         } else {
             single_flow_merge(&arg1);
             single_flow_merge(&arg2);
@@ -282,6 +282,9 @@ int main(int argc, char **argv) {
     fprintf(data, "\n");
 
     pthread_t* threads = (pthread_t*)malloc((sizeof(pthread_t) * p));
+    if (threads == NULL) {
+        printf("Memory error");
+    }
 
     int* array_for_qsort = (int*)malloc(sizeof(int) * n);
     if (array_for_qsort == NULL) {
@@ -306,7 +309,7 @@ int main(int argc, char **argv) {
     printf("Qsort: %lf\n", end_time_quick - start_time_quick);
 
     for (int i = 0; i < n; i++) {
-        fprintf(data, "%d ", array[i]);
+        fprintf(data, "%d ", array_result[i]);
     }
 
     FILE * stats = fopen("stats.txt", "w");
@@ -314,10 +317,10 @@ int main(int argc, char **argv) {
 
     fclose(data);
     fclose(stats);
-    free(array);
     free(array_result);
     free(array_for_qsort);
     free(threads);
+    free(array);
 
     return 0;
 }
