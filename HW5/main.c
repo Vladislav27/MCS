@@ -339,17 +339,14 @@ void* run(void* args) {
             free(result);
             break;
         }
-
         MPI_Barrier(MPI_COMM_WORLD);
     }
-
-    free(rands);
 
     free(passing_particles0);
     free(passing_particles1);
     free(passing_particles2);
     free(passing_particles3);
-
+    free(rands);
     free(areas);
     free(passing_particles_comp);
 
